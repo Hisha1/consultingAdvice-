@@ -1,0 +1,11 @@
+name = "consulting-advice"
+pages_build_output_dir = "public"
+compatibility_date = "2025-10-01"
+
+[vars]
+SUPABASE_URL = "https://lfkipnkachictwicshym.supabase.co"
+
+# Secrets (set in Cloudflare dashboard → your Pages project → Settings →
+# Variables and Secrets, as type "Secret"; never commit them):
+#   SITE_PASSWORD  - the password visitors type to get in
+#   SUPABASE_KEY   - the Supabase publishable key (sb_publishable_...)

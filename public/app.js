@@ -1,8 +1,6 @@
 (() => {
   "use strict";
 
-  const PASSWORD = "Wharton";
-  const AUTH_KEY = "cag-authenticated";
   const MAX_WORDS = 250;
   const REFRESH_MS = 30000;
 
@@ -15,32 +13,33 @@
     "Miscellaneous",
   ];
 
-  // ---------- Shared database (Supabase REST API) ----------
-  const cfg = window.TIPS_CONFIG || {};
-  const dbConfigured = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey);
-  const endpoint = dbConfigured ? cfg.supabaseUrl.replace(/\/+$/, "") + "/rest/v1/tips" : "";
-  const dbHeaders = {
-    apikey: cfg.supabaseAnonKey,
-    Authorization: "Bearer " + cfg.supabaseAnonKey,
-    "Content-Type": "application/json",
-  };
+  // ---------- Server API (Cloudflare Pages Functions) ----------
+  // The password check and the database key both live on the server.
+  let unlocked = false; // true once the visitor is past the password screen
+
+  async function api(path, init = {}) {
+    const res = await fetch("/api/" + path, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...init.headers },
+      credentials: "same-origin",
+    });
+    if (res.status === 401 && unlocked) {
+      location.reload(); // session expired: back to the password screen
+      throw new Error("Session expired.");
+    }
+    let data = null;
+    if (res.status !== 204) { try { data = await res.json(); } catch { /* empty */ } }
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `Something went wrong (error ${res.status}).`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
 
   const db = {
-    async list() {
-      const res = await fetch(endpoint + "?select=*&order=created_at.desc", { headers: dbHeaders });
-      if (!res.ok) throw new Error(`Could not load tips (error ${res.status}).`);
-      return res.json();
-    },
-    async add(tip) {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { ...dbHeaders, Prefer: "return=representation" },
-        body: JSON.stringify(tip),
-      });
-      if (!res.ok) throw new Error(`Could not save your tip (error ${res.status}).`);
-      const rows = await res.json();
-      return rows[0];
-    },
+    list: () => api("tips"),
+    add: (tip) => api("tips", { method: "POST", body: JSON.stringify(tip) }),
   };
 
   const $ = (id) => document.getElementById(id);
@@ -102,33 +101,43 @@
   }
 
   // ---------- Password gate ----------
-  function initGate(onUnlock) {
-    let authed = false;
-    try { authed = sessionStorage.getItem(AUTH_KEY) === "1"; } catch { /* ignore */ }
-    if (authed) { onUnlock(); return; }
+  async function initGate(onUnlock) {
+    try {
+      await api("session");
+      onUnlock();
+      return;
+    } catch { /* not logged in: show the gate */ }
 
+    const gate = $("gate");
     const form = $("gate-form");
     const input = $("gate-password");
     const error = $("gate-error");
+    const button = form.querySelector("button");
+    gate.hidden = false;
     input.focus();
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (input.value === PASSWORD) {
-        try { sessionStorage.setItem(AUTH_KEY, "1"); } catch { /* ignore */ }
+      error.textContent = "";
+      button.disabled = true;
+      try {
+        await api("login", { method: "POST", body: JSON.stringify({ password: input.value }) });
         onUnlock();
-      } else {
-        error.textContent = "Incorrect password. Try again.";
+      } catch (err) {
+        error.textContent = err.status === 401 ? "Incorrect password. Try again." : err.message;
         form.classList.remove("shake");
         void form.offsetWidth; // restart animation
         form.classList.add("shake");
         input.select();
+      } finally {
+        button.disabled = false;
       }
     });
   }
 
   // ---------- Main app ----------
   function initApp() {
+    unlocked = true;
     $("gate").remove();
     $("app").hidden = false;
 
@@ -209,14 +218,13 @@
     }
 
     async function refresh({ quiet = false } = {}) {
-      if (!dbConfigured) return;
       if (!quiet && !loaded) setStatus("Loading tips…");
       try {
         tips = await db.list();
         loaded = true;
         setStatus("");
       } catch (err) {
-        if (!quiet || !loaded) setStatus(err.message + " Check your connection and refresh the page.", true);
+        if (!quiet || !loaded) setStatus(err.message + " Try refreshing the page.", true);
       }
       renderTips();
     }
@@ -268,7 +276,6 @@
       if (!category) return (formError.textContent = "Please choose a category.");
       if (!body) return (formError.textContent = "Please write your tip.");
       if (words > MAX_WORDS) return (formError.textContent = `Your tip is ${words} words — please trim it to ${MAX_WORDS} or fewer.`);
-      if (!dbConfigured) return (formError.textContent = "The tips database isn't set up yet, so tips can't be saved.");
 
       formError.textContent = "";
       submitBtn.disabled = true;
@@ -287,7 +294,7 @@
         renderTips();
         closeForm();
       } catch (err) {
-        formError.textContent = err.message + " Please try again.";
+        formError.textContent = err.message;
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Post tip";
@@ -297,10 +304,6 @@
     renderFilters();
     renderTips();
 
-    if (!dbConfigured) {
-      setStatus("The tips database isn't connected yet. Add your Supabase URL and anon key to config.js (see README).", true);
-      return;
-    }
     refresh();
     // Pick up tips other people post while the page is open.
     setInterval(() => { if (!document.hidden) refresh({ quiet: true }); }, REFRESH_MS);
