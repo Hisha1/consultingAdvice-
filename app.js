@@ -3,8 +3,8 @@
 
   const PASSWORD = "Wharton";
   const AUTH_KEY = "cag-authenticated";
-  const TIPS_KEY = "cag-tips";
   const MAX_WORDS = 250;
+  const REFRESH_MS = 30000;
 
   const CATEGORIES = [
     "Interview Prep Advice",
@@ -15,46 +15,31 @@
     "Miscellaneous",
   ];
 
-  const SEED_TIPS = [
-    {
-      id: "seed-1",
-      title: "Structure out loud before you calculate",
-      category: "Interview Prep Advice",
-      contributor: "",
-      source: "Feedback from a mock case with a second-year",
-      body: "Interviewers care more about how you think than how fast you multiply. Before touching any numbers, take 30 seconds to lay out your approach, say it out loud, and check that the interviewer agrees. It saves you from solving the wrong problem.",
-      createdAt: Date.parse("2026-09-15T12:00:00Z"),
-    },
-    {
-      id: "seed-2",
-      title: "Pick the office for the people, not the city",
-      category: "Office Selection",
-      contributor: "Alex",
-      source: "Personal experience across two summer internships",
-      body: "Staffing models differ a lot between offices. Ask how projects are assigned, how much travel is typical, and which industries dominate locally. A smaller office can mean more exposure to partners early on.",
-      createdAt: Date.parse("2026-09-20T12:00:00Z"),
-    },
-    {
-      id: "seed-3",
-      title: "Quantify every resume bullet",
-      category: "Application",
-      contributor: "",
-      source: "Career services resume review",
-      body: "Screeners skim. Lead each bullet with an action verb and end it with a number: revenue, percentage, time saved, team size. If you can't quantify it, ask whether the bullet belongs at all.",
-      createdAt: Date.parse("2026-10-01T12:00:00Z"),
-    },
-  ];
+  // ---------- Shared database (Supabase REST API) ----------
+  const cfg = window.TIPS_CONFIG || {};
+  const dbConfigured = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey);
+  const endpoint = dbConfigured ? cfg.supabaseUrl.replace(/\/+$/, "") + "/rest/v1/tips" : "";
+  const dbHeaders = {
+    apikey: cfg.supabaseAnonKey,
+    Authorization: "Bearer " + cfg.supabaseAnonKey,
+    "Content-Type": "application/json",
+  };
 
-  // ---------- Storage helpers (fail gracefully if storage is blocked) ----------
-  const store = {
-    get(key, fallback) {
-      try {
-        const raw = localStorage.getItem(key);
-        return raw === null ? fallback : JSON.parse(raw);
-      } catch { return fallback; }
+  const db = {
+    async list() {
+      const res = await fetch(endpoint + "?select=*&order=created_at.desc", { headers: dbHeaders });
+      if (!res.ok) throw new Error(`Could not load tips (error ${res.status}).`);
+      return res.json();
     },
-    set(key, value) {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+    async add(tip) {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { ...dbHeaders, Prefer: "return=representation" },
+        body: JSON.stringify(tip),
+      });
+      if (!res.ok) throw new Error(`Could not save your tip (error ${res.status}).`);
+      const rows = await res.json();
+      return rows[0];
     },
   };
 
@@ -147,9 +132,16 @@
     $("gate").remove();
     $("app").hidden = false;
 
-    let tips = store.get(TIPS_KEY, null);
-    if (!Array.isArray(tips)) { tips = SEED_TIPS.slice(); store.set(TIPS_KEY, tips); }
+    let tips = [];
+    let loaded = false;
     let activeFilter = "All";
+
+    const status = $("status");
+    function setStatus(message, isError = false) {
+      status.textContent = message || "";
+      status.classList.toggle("error", isError);
+      status.hidden = !message;
+    }
 
     // Category select + filter chips
     const select = $("tip-category");
@@ -174,7 +166,7 @@
       const grid = $("tips");
       const visible = tips
         .filter((t) => activeFilter === "All" || t.category === activeFilter)
-        .sort((a, b) => b.createdAt - a.createdAt);
+        .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 
       grid.replaceChildren(...visible.map((t) => {
         const card = document.createElement("article");
@@ -195,30 +187,17 @@
         meta.className = "tip-meta";
         meta.append(metaLine("By", t.contributor || "Anonymous"));
         if (t.source) meta.append(metaLine("Source", t.source));
-        meta.append(metaLine("Posted", new Date(t.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })));
+        meta.append(metaLine("Posted", new Date(t.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })));
 
         card.append(cat, title, body, meta);
-
-        if (t.mine) {
-          const actions = document.createElement("div");
-          actions.className = "tip-actions";
-          const del = document.createElement("button");
-          del.type = "button";
-          del.className = "link-btn";
-          del.textContent = "Delete";
-          del.addEventListener("click", () => {
-            if (!confirm("Delete this tip?")) return;
-            tips = tips.filter((x) => x.id !== t.id);
-            store.set(TIPS_KEY, tips);
-            renderTips();
-          });
-          actions.append(del);
-          card.append(actions);
-        }
         return card;
       }));
 
-      $("empty").hidden = visible.length > 0;
+      const empty = $("empty");
+      empty.textContent = activeFilter === "All"
+        ? "No tips yet — be the first to add one."
+        : "No tips in this category yet — be the first to add one.";
+      empty.hidden = !loaded || visible.length > 0;
     }
 
     function metaLine(label, value) {
@@ -229,6 +208,19 @@
       return div;
     }
 
+    async function refresh({ quiet = false } = {}) {
+      if (!dbConfigured) return;
+      if (!quiet && !loaded) setStatus("Loading tips…");
+      try {
+        tips = await db.list();
+        loaded = true;
+        setStatus("");
+      } catch (err) {
+        if (!quiet || !loaded) setStatus(err.message + " Check your connection and refresh the page.", true);
+      }
+      renderTips();
+    }
+
     // Form behaviour
     const panel = $("form-panel");
     const form = $("tip-form");
@@ -237,6 +229,7 @@
     const anon = $("tip-anon");
     const contributor = $("tip-contributor");
     const formError = $("form-error");
+    const submitBtn = $("submit-tip");
 
     function updateWordCount() {
       const n = countWords(bodyInput.value);
@@ -264,7 +257,7 @@
       if (anon.checked) contributor.value = "";
     });
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = $("tip-title").value.trim();
       const category = select.value;
@@ -275,26 +268,42 @@
       if (!category) return (formError.textContent = "Please choose a category.");
       if (!body) return (formError.textContent = "Please write your tip.");
       if (words > MAX_WORDS) return (formError.textContent = `Your tip is ${words} words — please trim it to ${MAX_WORDS} or fewer.`);
+      if (!dbConfigured) return (formError.textContent = "The tips database isn't set up yet, so tips can't be saved.");
 
-      tips.push({
-        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
-        title,
-        category,
-        contributor: anon.checked ? "" : contributor.value.trim(),
-        source: $("tip-source").value.trim(),
-        body,
-        createdAt: Date.now(),
-        mine: true,
-      });
-      store.set(TIPS_KEY, tips);
-      activeFilter = "All";
-      renderFilters();
-      renderTips();
-      closeForm();
+      formError.textContent = "";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Posting…";
+      try {
+        const saved = await db.add({
+          title,
+          category,
+          contributor: anon.checked ? null : (contributor.value.trim() || null),
+          source: $("tip-source").value.trim() || null,
+          body,
+        });
+        if (saved) tips.push(saved);
+        activeFilter = "All";
+        renderFilters();
+        renderTips();
+        closeForm();
+      } catch (err) {
+        formError.textContent = err.message + " Please try again.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Post tip";
+      }
     });
 
     renderFilters();
     renderTips();
+
+    if (!dbConfigured) {
+      setStatus("The tips database isn't connected yet. Add your Supabase URL and anon key to config.js (see README).", true);
+      return;
+    }
+    refresh();
+    // Pick up tips other people post while the page is open.
+    setInterval(() => { if (!document.hidden) refresh({ quiet: true }); }, REFRESH_MS);
   }
 
   startSpecks();
