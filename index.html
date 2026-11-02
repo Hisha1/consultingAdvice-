@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consulting Advice Grove</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="specks" aria-hidden="true"></canvas>
+
+  <!-- Password gate -->
+  <div id="gate" class="gate">
+    <form id="gate-form" class="gate-card" autocomplete="off">
+      <h1>Consulting Advice Grove</h1>
+      <p>Enter the password to continue.</p>
+      <label for="gate-password" class="sr-only">Password</label>
+      <input id="gate-password" type="password" placeholder="Password" required />
+      <button type="submit">Enter</button>
+      <p id="gate-error" class="gate-error" role="alert"></p>
+    </form>
+  </div>
+
+  <div id="app" class="app" hidden>
+    <header class="site-header">
+      <div>
+        <h1>Consulting Advice Grove</h1>
+        <p class="tagline">Tips from people who've walked the path — take one, leave one.</p>
+      </div>
+      <button id="open-form" class="btn-primary" type="button">+ Add a tip</button>
+    </header>
+
+    <nav class="filters" aria-label="Filter by category" id="filters"></nav>
+
+    <section id="form-panel" class="form-panel" hidden>
+      <form id="tip-form" novalidate>
+        <h2>Share a tip</h2>
+
+        <div class="field">
+          <label for="tip-title">Title</label>
+          <input id="tip-title" type="text" maxlength="100" placeholder="e.g. Structure before you calculate" required />
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="tip-category">Category</label>
+            <select id="tip-category" required></select>
+          </div>
+          <div class="field">
+            <label for="tip-contributor">Contributor</label>
+            <input id="tip-contributor" type="text" maxlength="60" placeholder="Your name" />
+            <label class="check">
+              <input id="tip-anon" type="checkbox" /> Post anonymously
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="tip-source">Source <span class="hint">(where did you get it?)</span></label>
+          <input id="tip-source" type="text" maxlength="120" placeholder="e.g. Coffee chat with a McKinsey EM, Case in Point, personal experience" />
+        </div>
+
+        <div class="field">
+          <label for="tip-body">The tip</label>
+          <textarea id="tip-body" rows="7" placeholder="Write your advice here (max 250 words)" required></textarea>
+          <div class="word-count" id="word-count">0 / 250 words</div>
+        </div>
+
+        <p class="form-error" id="form-error" role="alert"></p>
+
+        <div class="actions">
+          <button type="button" class="btn-ghost" id="cancel-form">Cancel</button>
+          <button type="submit" class="btn-primary">Post tip</button>
+        </div>
+      </form>
+    </section>
+
+    <main>
+      <div id="tips" class="tips-grid"></div>
+      <p id="empty" class="empty" hidden>No tips in this category yet — be the first to add one.</p>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
