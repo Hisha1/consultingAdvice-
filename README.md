@@ -1,4 +1,4 @@
-# Consulting Advice Grove
+# Consulting Advice
 
 A password-protected page for sharing consulting recruiting tips, hosted as a
 **Cloudflare Worker** with tips stored in **Supabase**.
@@ -36,7 +36,7 @@ In the Supabase dashboard, open **SQL Editor → New query**, paste
    (the default). The Worker name must be `consultingadvice` (matches
    `wrangler.toml`).
 2. After the first deploy, open the Worker's **Settings → Variables and Secrets**
-   and add two variables of type **Secret**:
+   and add these variables of type **Secret**:
    - `SITE_PASSWORD` — the password visitors type
    - `SUPABASE_KEY` — your Supabase publishable key (`sb_publishable_...`)
    - `Email_ID` — the feedback email shown under the page title (optional; the
