@@ -1,4 +1,4 @@
-import { json } from "../../lib/session.js";
+import { json } from "./session.js";
 
 const CATEGORIES = [
   "Interview Prep Advice", "Office Selection", "Application",
@@ -21,7 +21,7 @@ async function failure(res, what) {
   return json({ error: `Could not ${what} (database error ${res.status}).` }, 502);
 }
 
-export async function onRequestGet({ env }) {
+export async function listTips(env) {
   try {
     const res = await supabase(env, "tips?select=*&order=created_at.desc");
     if (!res.ok) return failure(res, "load tips");
@@ -33,7 +33,7 @@ export async function onRequestGet({ env }) {
 
 const clean = (v) => (typeof v === "string" ? v.trim() : "");
 
-export async function onRequestPost({ request, env }) {
+export async function addTip(request, env) {
   let input;
   try { input = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
 
