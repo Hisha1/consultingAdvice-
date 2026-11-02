@@ -1,4 +1,4 @@
-name = "consulting-advice"
+name = "consultingadvice"
 main = "src/worker.js"
 compatibility_date = "2025-10-01"
 
@@ -11,7 +11,7 @@ run_worker_first = ["/api/*"]
 [vars]
 SUPABASE_URL = "https://lfkipnkachictwicshym.supabase.co"
 
-# Secrets (Cloudflare dashboard → Workers & Pages → consulting-advice →
+# Secrets (Cloudflare dashboard → Workers & Pages → consultingadvice →
 # Settings → Variables and Secrets, type "Secret"; never commit them):
 #   SITE_PASSWORD  - the password visitors type to get in
 #   SUPABASE_KEY   - the Supabase publishable key (sb_publishable_...)

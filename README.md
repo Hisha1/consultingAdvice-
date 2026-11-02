@@ -33,12 +33,16 @@ In the Supabase dashboard, open **SQL Editor → New query**, paste
 1. In the Cloudflare dashboard go to **Workers & Pages → Create → Import a
    repository**, pick this repository, and choose the branch to deploy.
    Leave the build command empty; the deploy command is `npx wrangler deploy`
-   (the default). The Worker name must be `consulting-advice` (matches
+   (the default). The Worker name must be `consultingadvice` (matches
    `wrangler.toml`).
 2. After the first deploy, open the Worker's **Settings → Variables and Secrets**
    and add two variables of type **Secret**:
    - `SITE_PASSWORD` — the password visitors type
    - `SUPABASE_KEY` — your Supabase publishable key (`sb_publishable_...`)
+
+   Make sure the type is **Secret**, not Text: Text variables are reset to what
+   `wrangler.toml` says on every deploy, so they'd be wiped. If Cloudflare shows
+   an "Update your Wrangler configuration" banner, a variable was added as Text.
 
    Secrets take effect immediately; no redeploy needed. The site lives at the
    `*.workers.dev` address shown on the Worker's overview page.
