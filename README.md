@@ -39,6 +39,8 @@ In the Supabase dashboard, open **SQL Editor → New query**, paste
    and add two variables of type **Secret**:
    - `SITE_PASSWORD` — the password visitors type
    - `SUPABASE_KEY` — your Supabase publishable key (`sb_publishable_...`)
+   - `Email_ID` — the feedback email shown under the page title (optional; the
+     line is hidden if it isn't set)
 
    Make sure the type is **Secret**, not Text: Text variables are reset to what
    `wrangler.toml` says on every deploy, so they'd be wiped. If Cloudflare shows

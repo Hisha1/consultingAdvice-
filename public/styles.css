@@ -87,6 +87,8 @@ h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 650; margin: 
 }
 .site-header h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--green-light); }
 .tagline { margin: 6px 0 0; color: var(--text-muted); }
+.feedback { font-size: 0.92rem; margin-top: 2px; }
+.feedback a { color: var(--green-light); }
 
 /* ---------- Buttons & inputs ---------- */
 button { font: inherit; cursor: pointer; }
@@ -150,7 +152,12 @@ textarea { resize: vertical; }
   margin-bottom: 32px;
   backdrop-filter: blur(6px);
 }
-.form-panel h2 { color: var(--green-light); margin-bottom: 16px; font-size: 1.4rem; }
+.form-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.form-panel h2 { color: var(--green-light); font-size: 1.4rem; }
 .field { margin-bottom: 16px; }
 .field > label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.92rem; }
 .hint { color: var(--text-muted); font-weight: 400; }

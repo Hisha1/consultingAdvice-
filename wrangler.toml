@@ -15,3 +15,4 @@ SUPABASE_URL = "https://lfkipnkachictwicshym.supabase.co"
 # Settings → Variables and Secrets, type "Secret"; never commit them):
 #   SITE_PASSWORD  - the password visitors type to get in
 #   SUPABASE_KEY   - the Supabase publishable key (sb_publishable_...)
+#   Email_ID       - feedback email shown on the page after login

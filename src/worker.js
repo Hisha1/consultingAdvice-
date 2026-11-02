@@ -1,5 +1,5 @@
 // Cloudflare Worker: serves the static page from public/ and handles /api/*.
-// Secrets (set in Cloudflare, never in code): SITE_PASSWORD, SUPABASE_KEY.
+// Secrets (set in Cloudflare, never in code): SITE_PASSWORD, SUPABASE_KEY, Email_ID.
 import { passwordMatches, createSessionCookie, hasValidSession, json } from "./session.js";
 import { listTips, addTip } from "./tips.js";
 
@@ -26,7 +26,7 @@ async function handleApi(request, env, path) {
   if (!(await hasValidSession(request, env))) return json({ error: "Please enter the password." }, 401);
 
   switch (route) {
-    case "GET /api/session": return json(null, 204);
+    case "GET /api/session": return json({ feedbackEmail: env.Email_ID || null });
     case "GET /api/tips": return listTips(env);
     case "POST /api/tips": return addTip(request, env);
     default: return json({ error: "Not found." }, 404);

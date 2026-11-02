@@ -29,6 +29,7 @@
       <div>
         <h1>Consulting Advice Grove</h1>
         <p class="tagline">Tips from people who've walked the path — take one, leave one.</p>
+        <p class="tagline feedback" id="feedback" hidden>For feedback reach out to <a id="feedback-email"></a></p>
       </div>
       <button id="open-form" class="btn-primary" type="button">+ Add a tip</button>
     </header>
@@ -37,7 +38,13 @@
 
     <section id="form-panel" class="form-panel" hidden>
       <form id="tip-form" novalidate>
-        <h2>Share a tip</h2>
+        <div class="form-head">
+          <h2>Share a tip</h2>
+          <div class="actions">
+            <button type="button" class="btn-ghost" id="cancel-form">Cancel</button>
+            <button type="submit" class="btn-primary" id="submit-tip">Post tip</button>
+          </div>
+        </div>
 
         <div class="field">
           <label for="tip-title">Title</label>
@@ -70,11 +77,6 @@
         </div>
 
         <p class="form-error" id="form-error" role="alert"></p>
-
-        <div class="actions">
-          <button type="button" class="btn-ghost" id="cancel-form">Cancel</button>
-          <button type="submit" class="btn-primary" id="submit-tip">Post tip</button>
-        </div>
       </form>
     </section>
 

@@ -103,8 +103,7 @@
   // ---------- Password gate ----------
   async function initGate(onUnlock) {
     try {
-      await api("session");
-      onUnlock();
+      onUnlock(await api("session"));
       return;
     } catch { /* not logged in: show the gate */ }
 
@@ -122,7 +121,7 @@
       button.disabled = true;
       try {
         await api("login", { method: "POST", body: JSON.stringify({ password: input.value }) });
-        onUnlock();
+        onUnlock(await api("session"));
       } catch (err) {
         error.textContent = err.status === 401 ? "Incorrect password. Try again." : err.message;
         form.classList.remove("shake");
@@ -136,8 +135,17 @@
   }
 
   // ---------- Main app ----------
-  function initApp() {
+  function initApp(session) {
     unlocked = true;
+
+    // Feedback contact (Email_ID secret in Cloudflare, sent only after login)
+    const email = session && session.feedbackEmail;
+    if (email) {
+      const link = $("feedback-email");
+      link.textContent = email;
+      link.href = "mailto:" + email;
+      $("feedback").hidden = false;
+    }
     $("gate").remove();
     $("app").hidden = false;
 
